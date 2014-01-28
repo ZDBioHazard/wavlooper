@@ -24,6 +24,7 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>"""
 
 import wave
+import struct
 import argparse
 
 
@@ -39,6 +40,8 @@ opts.add_argument('loop_end', type=int, nargs='?', default=None,
                   help="Sample at the end of the loop (defaults to end)")
 opts.add_argument('-l', '--loops', type=int, default=2,
                   help="Number of loop plays (defaults to 2)")
+opts.add_argument('-f', '--fade', type=float, default=15.0,
+                  help="Looped fade out in seconds (defaults to 15s)")
 opts = opts.parse_args()
 
 # Get the files open.
@@ -62,6 +65,23 @@ del audio_start  # Save a bit of memory.
 # Write as many loops as requested.
 for i in range(opts.loops):
     file_out.writeframes(audio_loop)
+
+# Create a looped fadeout if there is no end section.
+if opts.loop_end == file_in.getnframes():
+    audio_end = bytes()  # Hijack the end section since we won't be using it.
+    chans = file_in.getnchannels()
+    width = file_in.getsampwidth()
+    pack = "<%d%c" % (chans, [None, 'B', 'h', None, 'l'][width])
+    fade_len = min(opts.loop_end - opts.loop_start,
+                   opts.fade * file_in.getframerate())
+
+    for sidx in range(int(fade_len)):
+        sample = list(struct.unpack_from(pack, audio_loop, sidx*chans*width))
+
+        # Attenuate each channel.
+        for cidx in range(len(sample)):
+            sample[cidx] *= max(0, (1.0 - (sidx / float(fade_len))))
+        audio_end += struct.pack(pack, *sample)
 
 # Write the end.
 file_out.writeframes(audio_end)
