@@ -48,15 +48,16 @@ opts = opts.parse_args()
 file_in = wave.open(opts.file_in, 'r')
 file_out = wave.open(opts.file_out, 'w')
 file_out.setparams(file_in.getparams())
+frame_count = file_in.getnframes()
 
 # Collect some information.
 if opts.loop_end is None:
-    opts.loop_end = file_in.getnframes()
+    opts.loop_end = frame_count
 
 # Read in the audio we're going to need.
 audio_start = file_in.readframes(opts.loop_start)
-audio_loop = file_in.readframes(opts.loop_end-file_in.tell())
-audio_end = file_in.readframes(file_in.getnframes()-file_in.tell())
+audio_loop = file_in.readframes(opts.loop_end-opts.loop_start)
+audio_end = file_in.readframes(frame_count-opts.loop_end)
 
 # Write the start of the audio.
 file_out.writeframes(audio_start)
@@ -67,7 +68,7 @@ for i in range(opts.loops):
     file_out.writeframes(audio_loop)
 
 # Create a looped fadeout if there is no end section.
-if opts.loop_end == file_in.getnframes():
+if opts.loop_end == frame_count:
     audio_end = bytes()  # Hijack the end section since we won't be using it.
     chans = file_in.getnchannels()
     width = file_in.getsampwidth()
