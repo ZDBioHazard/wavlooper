@@ -54,16 +54,11 @@ frame_count = file_in.getnframes()
 if opts.loop_end is None:
     opts.loop_end = frame_count
 
-# Read in the audio we're going to need.
-audio_start = file_in.readframes(opts.loop_start)
+# Read and write the start of the audio.
+file_out.writeframes(file_in.readframes(opts.loop_start))
+
+# Read the loop and write as many loops as requested.
 audio_loop = file_in.readframes(opts.loop_end-opts.loop_start)
-audio_end = file_in.readframes(frame_count-opts.loop_end)
-
-# Write the start of the audio.
-file_out.writeframes(audio_start)
-del audio_start  # Save a bit of memory.
-
-# Write as many loops as requested.
 for i in range(opts.loops):
     file_out.writeframes(audio_loop)
 
@@ -84,8 +79,10 @@ if opts.loop_end == frame_count:
             sample[cidx] *= max(0, (1.0 - (sidx / float(fade_len))))
         audio_end += struct.pack(pack, *sample)
 
-# Write the end.
-file_out.writeframes(audio_end)
+    file_out.writeframes(audio_end)
+else:
+    # Read and write the end.
+    file_out.writeframes(file_in.readframes(frame_count-opts.loop_end))
 
 file_in.close()
 file_out.close()
