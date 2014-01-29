@@ -67,7 +67,7 @@ if opts.loop_end == frame_count:
     audio_end = bytes()  # Hijack the end section since we won't be using it.
     chans = file_in.getnchannels()
     width = file_in.getsampwidth()
-    pack = "<%d%c" % (chans, [None, 'B', 'h', None, 'l'][width])
+    pack = "<%d%c" % (chans, [None, None, 'h'][width])
     fade_len = min(opts.loop_end - opts.loop_start,
                    opts.fade * file_in.getframerate())
 
