@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 
-import os
 from distutils.core import setup
 from distutils.command.build_scripts import build_scripts
 
 class build_scripts_strip_py(build_scripts):
     def run(self):
-        self.mkpath(self.build_dir)
+        # Process the files list, stripping '.py' from script names.
+        new_list = []
         for script in self.scripts:
-            path = os.path.join(self.build_dir, script)
-            # Only strip the extension and change the permissions on posix.
-            if os.name == 'posix':
-                os.chmod(script, 0755)
-                if script.endswith('.py'):
-                    path = path[:-3]
-            self.copy_file(script, path)
+            if script.endswith('.py'):
+                self.copy_file(script, script[:-3])
+                script = script[:-3]
+            new_list.append(script)
+        # Pass the processed list to the original build_scripts.run()
+        self.scripts = new_list
+        build_scripts.run(self)
 
 setup(name='wavlooper',
       version='1.0',
